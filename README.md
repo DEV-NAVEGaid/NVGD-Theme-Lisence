@@ -13,7 +13,14 @@ npm run migrate          # membuat tabel, aman diulang
 npm start                # default port 3000
 ```
 
-Docker (port 8080, migration otomatis saat start):
+Deploy di **Coolify** (API + PostgreSQL sekaligus):
+
+1. New Resource → repo ini → Build Pack **Docker Compose**.
+2. Deploy. Password DB dan `ADMIN_TOKEN` dibuat otomatis oleh Coolify (lihat tab Environment Variables, `SERVICE_PASSWORD_64_ADMIN` = token admin). Domain juga otomatis, bisa diganti di service `app`.
+
+Migration jalan otomatis saat start, data DB di volume `pgdata`.
+
+Docker saja, DB eksternal (port 8080, migration otomatis saat start):
 
 ```bash
 docker build -t license-backend .
