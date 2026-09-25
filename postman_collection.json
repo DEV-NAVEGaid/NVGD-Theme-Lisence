@@ -1,0 +1,688 @@
+{
+  "info": {
+    "_postman_id": "06c65952-961a-4802-aa9c-405afd9e5c4c",
+    "name": "NAVEGaid Theme License",
+    "description": "Isi `base_url` dan `admin_token` di tab Variables, lalu Run collection.\n\n`license_code` terisi otomatis setelah request \"Buat kode\".",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "admin_token",
+      "value": "sofia-test-token-1234567890-abcdef"
+    },
+    {
+      "key": "theme_id",
+      "value": "navegaid-beauty"
+    },
+    {
+      "key": "license_code",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Cek server",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Server hidup\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json().ok).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin tanpa token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ditolak tanpa token\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Buat kode",
+      "item": [
+        {
+          "name": "Buat kode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme_id\": \"{{theme_id}}\",\n  \"order_id\": \"3456789012\",\n  \"email\": \"buyer@mail.com\",\n  \"note\": \"dari Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Kode hasilnya otomatis disimpan ke variable {{license_code}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Kode dibuat\", () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const l = pm.response.json();",
+                  "  pm.expect(l.license_code).to.match(/^[A-Z0-9]+-3456789012-[A-Z2-9]{5}$/);",
+                  "  pm.expect(l.store_id).to.eql(null);",
+                  "  pm.collectionVariables.set(\"license_code\", l.license_code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Order id kosong → ditolak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme_id\": \"{{theme_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Order id wajib\", () => { pm.response.to.have.status(400); pm.expect(pm.response.json().error).to.eql(\"invalid_order_id\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cari kode",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses?q=3456789012",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "3456789012"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Kode ketemu\", () => { pm.response.to.have.status(200); pm.expect(pm.response.json().licenses.length).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Verify (seperti theme)",
+      "item": [
+        {
+          "name": "Toko A → aktif",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/licenses/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "licenses",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_key\": \"{{license_code}}\",\n  \"shop\": \"tokoa.myshopify.com\",\n  \"theme\": \"{{theme_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Valid untuk toko A\", () => pm.expect(pm.response.json().valid).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Toko B → ditolak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/licenses/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "licenses",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_key\": \"{{license_code}}\",\n  \"shop\": \"tokob.myshopify.com\",\n  \"theme\": \"{{theme_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ditolak: dipakai toko lain\", () => {",
+                  "  const r = pm.response.json();",
+                  "  pm.expect(r.valid).to.eql(false); pm.expect(r.reason).to.eql(\"wrong_shop\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Theme lain → ditolak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/licenses/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "licenses",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_key\": \"{{license_code}}\",\n  \"shop\": \"tokoa.myshopify.com\",\n  \"theme\": \"theme-lain\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ditolak: theme lain\", () => pm.expect(pm.response.json().reason).to.eql(\"wrong_theme\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Kode ngawur → ditolak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/licenses/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "licenses",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_key\": \"NAVEGAID-1-ZZZZZ\",\n  \"shop\": \"tokoa.myshopify.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ditolak: kode tidak ada\", () => pm.expect(pm.response.json().reason).to.eql(\"not_found\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Kelola kode",
+      "item": [
+        {
+          "name": "Detail kode",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses/{{license_code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses",
+                "{{license_code}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Terkunci ke toko A\", () => pm.expect(pm.response.json().store_id).to.eql(\"tokoa.myshopify.com\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset (pindah toko)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses/{{license_code}}/reset",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses",
+                "{{license_code}}",
+                "reset"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Lepas dari toko A\", () => pm.expect(pm.response.json().store_id).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Toko B sekarang bisa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/licenses/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "licenses",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_key\": \"{{license_code}}\",\n  \"shop\": \"tokob.myshopify.com\",\n  \"theme\": \"{{theme_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Aktif di toko B\", () => { const r = pm.response.json(); pm.expect(r.valid).to.eql(true); pm.expect(r.activated).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revoke",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses/{{license_code}}/revoke",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses",
+                "{{license_code}}",
+                "revoke"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status revoked\", () => pm.expect(pm.response.json().status).to.eql(\"revoked\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setelah revoke → ditolak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/licenses/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "licenses",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"license_key\": \"{{license_code}}\",\n  \"shop\": \"tokob.myshopify.com\",\n  \"theme\": \"{{theme_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Ditolak: kode dimatikan\", () => pm.expect(pm.response.json().reason).to.eql(\"revoked\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restore",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/licenses/{{license_code}}/restore",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "licenses",
+                "{{license_code}}",
+                "restore"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Aktif lagi\", () => pm.expect(pm.response.json().status).to.eql(\"active\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

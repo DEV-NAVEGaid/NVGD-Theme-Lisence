@@ -1,0 +1,24 @@
+{
+  "name": "navegaid-theme-license",
+  "version": "1.0.0",
+  "private": true,
+  "description": "License server untuk theme Shopify yang dijual di Etsy (1 license = 1 store)",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "migrate": "node scripts/migrate.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "pg": "^8.23.0"
+  }
+}
